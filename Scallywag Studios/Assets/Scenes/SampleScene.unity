@@ -463,6 +463,14 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1032412347708825972, guid: 6c20bd98bf54bb745a4a6d40d7dc8d35, type: 3}
+      propertyPath: moveSpeed
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1032412347708825972, guid: 6c20bd98bf54bb745a4a6d40d7dc8d35, type: 3}
+      propertyPath: waterDrag
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1032412347708825972, guid: 6c20bd98bf54bb745a4a6d40d7dc8d35, type: 3}
       propertyPath: whatIsWater.m_Bits
       value: 128
       objectReference: {fileID: 0}
