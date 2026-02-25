@@ -55,6 +55,7 @@ public class SealMovement : MonoBehaviour
             whatIsGround);
 
         rb.drag = isInWater ? waterDrag : airDrag;
+        rb.useGravity = true;
 
         if (jumpHeld && readyToJump && isGrounded && !isInWater)
         {
@@ -68,16 +69,35 @@ public class SealMovement : MonoBehaviour
     private void FixedUpdate()
     {
         MovePlayer();
+        if (isInWater)
+        {
+            // Counteract some gravity
+            rb.AddForce(Vector3.up * 7f, ForceMode.Force);
+        }
     }
 
     private void MovePlayer()
     {
         if (isInWater)
         {
-            // Swimming: move freely in XZ plane, optionally allow vertical movement
-            moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
-            rb.AddForce(moveDirection.normalized * moveSpeed * 7f, ForceMode.Force);
+            Vector3 camForward = Camera.main.transform.forward;
+            Vector3 camRight = Camera.main.transform.right;
+
+            float upwardInput = 0f;
+
+            if (Input.GetKey(KeyCode.Space))
+                upwardInput = 1f;
+            else if (Input.GetKey(KeyCode.LeftControl))
+                upwardInput = -1f;
+
+            moveDirection =
+                camForward * verticalInput +
+                camRight * horizontalInput +
+                Vector3.up * upwardInput;
+
+            rb.AddForce(moveDirection.normalized * moveSpeed * 4f, ForceMode.Acceleration);
         }
+
         else if (isGrounded)
         {
             // Walking on land
