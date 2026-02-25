@@ -6,129 +6,119 @@ using UnityEngine;
 public class SealMovement : MonoBehaviour
 {
     [Header("Movement")]
-    public float moveSpeed;
+    public float moveSpeed = 5f;
+    public float jumpForce = 5f;
+    public float jumpCooldown = 0.5f;
+    public float airMultiplier = 0.5f;
+    bool jumpHeld;
 
     public float waterDrag = 4f;
     public float airDrag = 0f;
 
-    public float jumpForce;
-    public float jumpCooldown;
-    public float airMultiplier;
-    bool readyToJump;
-
-    [Header("Water Check")]
-    public LayerMask whatIsWater;
-    bool isInWater;
-
-    [Header("Ground Check")]
+    [Header("Checks")]
     public LayerMask whatIsGround;
-    bool isGrounded;
-
-    [Header("Keybinds")]
-    public KeyCode jumpKey = KeyCode.Space;
-    public string jumpButton = "Jump";
-
+    public LayerMask whatIsWater;
+    public float groundCheckDistance = 0.6f; // adjust to seal height
     public Transform orientation;
+
+    [Header("Input")]
+    public KeyCode jumpKey = KeyCode.Space;
+
+    Rigidbody rb;
+    bool readyToJump = true;
+    bool isGrounded;
+    bool isInWater;
 
     float horizontalInput;
     float verticalInput;
-
     Vector3 moveDirection;
-
-    Rigidbody rb;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
-
     }
+
     private void Update()
-    {
-        MyInput();
-
-        if (isInWater)
-            rb.drag = waterDrag;
-        else
-            rb.drag = airDrag;
-
-        SpeedControl();
-    }
-    private void FixedUpdate()
-    {
-        MovePlayer();
-    }
-    private void MyInput()
     {
         horizontalInput = Input.GetAxisRaw("Horizontal");
         verticalInput = Input.GetAxisRaw("Vertical");
 
-        if ((Input.GetKey(jumpKey) || Input.GetButtonDown(jumpButton)) && readyToJump && isGrounded)
+        jumpHeld = Input.GetKey(jumpKey) || Input.GetButton("Jump");
+
+        float height = GetComponent<Collider>().bounds.extents.y;
+
+        isGrounded = Physics.Raycast(
+            transform.position,
+            Vector3.down,
+            height + 0.1f,
+            whatIsGround);
+
+        rb.drag = isInWater ? waterDrag : airDrag;
+
+        if (jumpHeld && readyToJump && isGrounded && !isInWater)
         {
             Jump();
-            readyToJump = false;
-            Invoke(nameof(ResetJump), jumpCooldown);
         }
+
+
+        SpeedControl();
+    }
+
+    private void FixedUpdate()
+    {
+        MovePlayer();
     }
 
     private void MovePlayer()
     {
         if (isInWater)
         {
-            moveDirection = transform.forward * verticalInput + transform.right * horizontalInput;
-            rb.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
+            // Swimming: move freely in XZ plane, optionally allow vertical movement
+            moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
+            rb.AddForce(moveDirection.normalized * moveSpeed * 7f, ForceMode.Force);
         }
         else if (isGrounded)
         {
+            // Walking on land
             moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
-            rb.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
+            rb.AddForce(moveDirection.normalized * moveSpeed * 7f, ForceMode.Force);
         }
         else
         {
+            // Falling / air movement
             moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
-            rb.AddForce(moveDirection.normalized * moveSpeed * 10f * airMultiplier, ForceMode.Force);
-        }
-    }
-    private void OnTriggerEnter(Collider other)
-    {
-        if (((1 << other.gameObject.layer) & whatIsWater) != 0)
-            isInWater = true;
-
-        if (((1 << other.gameObject.layer) & whatIsGround) != 0)
-            isGrounded = true;
-    }
-    private void OnTriggerExit(Collider other)
-    {
-        if (((1 << other.gameObject.layer) & whatIsWater) != 0)
-        {
-            isInWater = false;
-        }
-
-        if (((1 << other.gameObject.layer) & whatIsGround) != 0)
-        {
-            isGrounded = false;
-        }
-    }
-
-    private void SpeedControl()
-    {
-        Vector3 flatVel = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-        if (flatVel.magnitude > moveSpeed)
-        {
-            Vector3 limitedVel = flatVel.normalized * moveSpeed;
-            rb.velocity = new Vector3(limitedVel.x, rb.velocity.y, limitedVel.z);
+            rb.AddForce(moveDirection.normalized * moveSpeed * 7f * airMultiplier, ForceMode.Force);
         }
     }
 
     private void Jump()
     {
+        readyToJump = false;
         rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
-        rb.AddForce(transform.up * jumpForce, ForceMode.Impulse);
+        rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        Invoke(nameof(ResetJump), jumpCooldown);
     }
 
-    private void ResetJump()
+    private void ResetJump() => readyToJump = true;
+
+    private void SpeedControl()
     {
-        readyToJump = true;
+        Vector3 flatVel = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+        if (flatVel.magnitude > moveSpeed)
+            rb.velocity = new Vector3(flatVel.normalized.x * moveSpeed, rb.velocity.y, flatVel.normalized.z * moveSpeed);
+    }
+
+    // Water detection using trigger colliders
+    private void OnTriggerEnter(Collider other)
+    {
+        if (((1 << other.gameObject.layer) & whatIsWater) != 0)
+            isInWater = true;
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (((1 << other.gameObject.layer) & whatIsWater) != 0)
+            isInWater = false;
     }
 }
-
