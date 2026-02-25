@@ -1,3 +1,14 @@
+# Ensure all text files use LF internally, but Windows checkout uses CRLF
+* text=auto
+
+# Unity specific
+*.cs text eol=lf
+*.shader text eol=lf
+*.txt text eol=lf
+*.json text eol=lf
+*.meta text eol=lf
+
+
 *.psd filter=lfs diff=lfs merge=lfs -text
 *.fbx filter=lfs diff=lfs merge=lfs -text
 *.wav filter=lfs diff=lfs merge=lfs -text
