@@ -72,7 +72,7 @@ public class SealMovement : MonoBehaviour
         if (isInWater)
         {
             // Counteract some gravity
-            rb.AddForce(Vector3.up * 7f, ForceMode.Force);
+            rb.AddForce(Vector3.up * 20f, ForceMode.Force);
         }
     }
 
